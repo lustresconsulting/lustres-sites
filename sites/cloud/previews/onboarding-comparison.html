@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Orbit — Onboarding Flow Design Comparison</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        background: 'hsl(148 50% 10%)',
+        foreground: 'hsl(220 14% 96%)',
+        card: 'hsl(150 46% 7%)',
+        'card-foreground': 'hsl(220 14% 96%)',
+        border: 'rgba(255,255,255,0.08)',
+        input: 'rgba(255,255,255,0.12)',
+        primary: 'hsl(24 95% 53%)',
+        'primary-foreground': 'hsl(0 0% 100%)',
+        secondary: 'hsl(150 30% 14%)',
+        'secondary-foreground': 'hsl(220 14% 96%)',
+        muted: 'hsl(150 30% 14%)',
+        'muted-foreground': 'hsl(220 9% 64%)',
+        accent: 'hsl(150 30% 14%)',
+        ring: 'hsl(24 95% 53%)',
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+      },
+    }
+  }
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  * { border-color: rgba(255,255,255,0.08); box-sizing: border-box; }
+  body { background: hsl(150 50% 6%); color: hsl(220 14% 96%); font-family: 'Inter', system-ui, sans-serif; }
+
+  /* Animations */
+  @keyframes stepIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slideRight {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes shimmer {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+  }
+  @keyframes completeStep {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+  }
+  @keyframes bubbleIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes typing {
+    0%, 60% { opacity: 1; }
+    30% { opacity: 0.3; }
+  }
+
+  .step-in { animation: stepIn 0.35s ease-out; }
+  .slide-right { animation: slideRight 0.4s ease-out; }
+  .fade-up { animation: fadeUp 0.3s ease-out; }
+  .bubble-in { animation: bubbleIn 0.35s ease-out; }
+  .spinner { animation: spin 1s linear infinite; }
+  .shimmer { animation: shimmer 1.5s ease-in-out infinite; }
+  .completing { animation: completeStep 0.4s ease-out; }
+
+  /* Shared inputs */
+  .orbit-input {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: all 0.15s ease;
+  }
+  .orbit-input:focus {
+    outline: none;
+    border-color: hsl(24 95% 53%);
+    box-shadow: 0 0 0 3px hsl(24 95% 53% / 0.15);
+  }
+
+  /* Primary button */
+  .btn-primary {
+    background: linear-gradient(135deg, hsl(24 95% 53%), hsl(20 90% 48%));
+    transition: all 0.15s ease;
+  }
+  .btn-primary:hover {
+    background: linear-gradient(135deg, hsl(24 95% 58%), hsl(20 90% 53%));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px hsl(24 95% 53% / 0.3);
+  }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-secondary {
+    background: hsl(150 30% 14%);
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: all 0.15s ease;
+  }
+  .btn-secondary:hover {
+    background: hsl(150 30% 18%);
+    border-color: rgba(255,255,255,0.2);
+  }
+
+  /* Gradient borders */
+  .gradient-border-blue {
+    background: linear-gradient(135deg, hsl(210 90% 55% / 0.4), hsl(180 70% 45% / 0.3));
+    padding: 1px;
+    border-radius: 0.75rem;
+  }
+  .gradient-border-purple {
+    background: linear-gradient(135deg, hsl(270 80% 60% / 0.4), hsl(310 70% 50% / 0.3));
+    padding: 1px;
+    border-radius: 0.75rem;
+  }
+  .gradient-border-gray {
+    background: linear-gradient(135deg, hsl(220 10% 50% / 0.4), hsl(220 10% 35% / 0.3));
+    padding: 1px;
+    border-radius: 0.75rem;
+  }
+
+  /* Column scrolling */
+  .option-column {
+    height: calc(100vh - 140px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+  }
+  .option-column::-webkit-scrollbar { width: 4px; }
+  .option-column::-webkit-scrollbar-track { background: transparent; }
+  .option-column::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+  /* Toggle switch */
+  .toggle-track {
+    transition: background-color 0.15s ease;
+  }
+  .toggle-thumb {
+    transition: left 0.15s ease;
+  }
+
+  /* ── Option B specific ── */
+  .optB-pill {
+    transition: all 0.2s ease;
+  }
+  .optB-pill.active {
+    background: hsl(24 95% 53%);
+    color: white;
+  }
+  .optB-pill.completed {
+    background: hsl(150 40% 30%);
+    color: hsl(150 60% 70%);
+  }
+  .optB-pill.inactive {
+    background: rgba(255,255,255,0.06);
+    color: hsl(220 9% 50%);
+  }
+
+  /* ── Option C specific ── */
+  .chat-bubble-left {
+    background: hsl(150 30% 14%);
+    border-radius: 2px 16px 16px 16px;
+    animation: bubbleIn 0.35s ease-out;
+  }
+  .chat-bubble-right {
+    background: hsl(24 95% 53% / 0.15);
+    border: 1px solid hsl(24 95% 53% / 0.25);
+    border-radius: 16px 2px 16px 16px;
+    animation: bubbleIn 0.35s ease-out;
+  }
+  .typing-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: hsl(220 9% 64%);
+    display: inline-block;
+  }
+  .typing-dot:nth-child(1) { animation: typing 1.2s infinite 0s; }
+  .typing-dot:nth-child(2) { animation: typing 1.2s infinite 0.2s; }
+  .typing-dot:nth-child(3) { animation: typing 1.2s infinite 0.4s; }
+</style>
+</head>
+<body class="min-h-screen p-6">
+
+<!-- Page header -->
+<div class="text-center mb-8">
+  <div class="inline-flex items-center gap-2 mb-3">
+    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-orange-600 flex items-center justify-center">
+      <i data-lucide="orbit" class="w-5 h-5 text-white"></i>
+    </div>
+    <span class="text-xl font-bold tracking-tight">Orbit</span>
+  </div>
+  <h1 class="text-3xl font-extrabold tracking-tight mb-2">Onboarding Flow — Design Comparison</h1>
+  <p class="text-muted-foreground text-sm">3 options for review. Recommended option is marked.</p>
+</div>
+
+<!-- 3-column grid -->
+<div class="grid grid-cols-3 gap-0 max-w-[1260px] mx-auto" style="grid-template-columns: 1fr 1px 1fr 1px 1fr;">
+
+  <!-- Option A -->
+  <div class="px-3">
+    <div class="text-center mb-4">
+      <h2 class="text-base font-bold tracking-tight">Option A — Minimal Wizard</h2>
+    </div>
+    <div class="option-column" id="optA-container"></div>
+  </div>
+
+  <!-- Separator -->
+  <div class="bg-white/[0.06]"></div>
+
+  <!-- Option B -->
+  <div class="px-3">
+    <div class="text-center mb-4">
+      <h2 class="text-base font-bold tracking-tight">
+        Option B — Full-Page Immersive
+        <span class="inline-block ml-1.5 px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 text-[10px] font-bold uppercase tracking-wider align-middle">Recommended</span>
+      </h2>
+    </div>
+    <div class="option-column" id="optB-container"></div>
+  </div>
+
+  <!-- Separator -->
+  <div class="bg-white/[0.06]"></div>
+
+  <!-- Option C -->
+  <div class="px-3">
+    <div class="text-center mb-4">
+      <h2 class="text-base font-bold tracking-tight">Option C — Conversational Flow</h2>
+    </div>
+    <div class="option-column" id="optC-container"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// Shared data
+// ═══════════════════════════════════════════
+const REPO = 'Sunnepah/oktradesystem';
+const STEPS = ['App Name', 'GitHub', 'Analyzing', 'Components'];
+const COMPONENTS = [
+  { dir: '/api', type: 'Backend', color: 'blue', icon: 'server', name: 'api', exposed: true },
+  { dir: '/admin-api', type: 'Backend', color: 'blue', icon: 'server', name: 'admin-api', exposed: true },
+  { dir: '/frontend', type: 'Frontend', color: 'purple', icon: 'monitor', name: 'frontend', exposed: true },
+  { dir: '/worker', type: 'Worker', color: 'gray', icon: 'cog', name: 'worker', exposed: false },
+];
+
+function cloneComponents() {
+  return COMPONENTS.map(c => ({...c}));
+}
+
+// ═══════════════════════════════════════════
+// OPTION A — Minimal Wizard
+// ═══════════════════════════════════════════
+const optA = {
+  step: 1,
+  appName: '',
+  components: cloneComponents(),
+
+  init() {
+    this.render();
+  },
+
+  render() {
+    const container = document.getElementById('optA-container');
+    let html = '';
+
+    // Sidebar stepper + content side by side
+    html += '<div class="flex gap-4">';
+
+    // Vertical stepper
+    html += '<div class="flex flex-col items-center gap-0 pt-2 shrink-0">';
+    for (let i = 1; i <= 4; i++) {
+      const isActive = i === this.step;
+      const isComplete = i < this.step;
+      const dotClass = isComplete
+        ? 'w-7 h-7 rounded-full flex items-center justify-center bg-primary text-white text-[10px] font-semibold'
+        : isActive
+          ? 'w-7 h-7 rounded-full flex items-center justify-center bg-primary text-white text-[10px] font-bold ring-3 ring-primary/20'
+          : 'w-7 h-7 rounded-full flex items-center justify-center bg-secondary text-muted-foreground text-[10px] font-medium';
+      html += `<div class="${dotClass}">`;
+      if (isComplete) html += '<i data-lucide="check" class="w-3 h-3"></i>';
+      else html += i;
+      html += '</div>';
+      if (i < 4) {
+        const lineClass = i < this.step ? 'bg-primary' : 'bg-white/[0.06]';
+        html += `<div class="w-0.5 h-8 ${lineClass}"></div>`;
+      }
+    }
+    html += '</div>';
+
+    // Content area
+    html += '<div class="flex-1 min-w-0">';
+    html += `<div class="step-in">${this.renderCurrentStep()}</div>`;
+    html += '</div>';
+
+    html += '</div>';
+
+    container.innerHTML = html;
+    lucide.createIcons();
+
+    if (this.step === 3) this.runAnalysis();
+  },
+
+  renderCurrentStep() {
+    switch (this.step) {
+      case 1: return this.renderStep1();
+      case 2: return this.renderStep2();
+      case 3: return this.renderStep3();
+      case 4: return this.renderStep4();
+    }
+  },
+
+  renderStep1() {
+    const slug = (this.appName || 'my-app') + '-a3f9b2c1';
+    return `
+      <div class="rounded-xl border border-border bg-card p-6" style="box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.04), 0 12px 24px rgba(0,0,0,0.03);">
+        <h2 class="text-lg font-bold tracking-tight mb-1">Name your app</h2>
+        <p class="text-muted-foreground text-xs mb-4">Choose a name for your application.</p>
+        <label class="block text-xs font-medium mb-1.5">App name</label>
+        <input type="text" value="${this.appName}" oninput="optA.appName=this.value;optA.updateSlug()" class="orbit-input w-full rounded-lg px-3 py-2.5 text-sm text-foreground font-mono" placeholder="my-awesome-app" id="optA-name" />
+        <div class="rounded-lg bg-secondary/60 border border-border px-3 py-2.5 mt-3 mb-4">
+          <div class="flex items-center gap-1.5 text-xs">
+            <i data-lucide="globe" class="w-3 h-3 text-muted-foreground"></i>
+            <span class="text-muted-foreground">URL:</span>
+          </div>
+          <p class="font-mono text-xs mt-0.5 text-primary font-medium" id="optA-slug">${slug}.orbit.lustres.dev</p>
+        </div>
+        <button onclick="optA.goTo(2)" class="btn-primary w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white">Continue</button>
+      </div>`;
+  },
+
+  renderStep2() {
+    return `
+      <div class="rounded-xl border border-border bg-card p-6" style="box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.04), 0 12px 24px rgba(0,0,0,0.03);">
+        <h2 class="text-lg font-bold tracking-tight mb-1">Connect GitHub</h2>
+        <p class="text-muted-foreground text-xs mb-4">Link your repository.</p>
+        <div class="rounded-lg border border-green-500/30 bg-green-500/10 p-3 mb-4">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
+              <i data-lucide="github" class="w-4 h-4"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-semibold">${REPO}</p>
+              <p class="text-[10px] text-muted-foreground">Connected via GitHub App</p>
+            </div>
+            <div class="flex items-center gap-1 text-green-400">
+              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="optA.goTo(1)" class="btn-secondary rounded-lg px-4 py-2.5 text-xs font-medium text-foreground">Back</button>
+          <button onclick="optA.goTo(3)" class="btn-primary flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold text-white">Continue</button>
+        </div>
+      </div>`;
+  },
+
+  renderStep3() {
+    const labels = ['Cloning repository', 'Detecting language & framework', 'Detecting components', 'Generating Dockerfiles'];
+    let items = '';
+    for (let i = 0; i < 4; i++) {
+      items += `
+        <div class="flex items-center gap-2 p-2 rounded-lg ${i === 0 ? '' : 'opacity-40'}" id="optA-astep-${i}">
+          <div class="w-4 h-4 flex items-center justify-center text-muted-foreground">
+            ${i === 0 ? '<i data-lucide="loader-2" class="w-3 h-3 spinner"></i>' : '<div class="w-1.5 h-1.5 rounded-full bg-muted-foreground/40"></div>'}
+          </div>
+          <span class="text-xs">${labels[i]}</span>
+        </div>`;
+    }
+    return `
+      <div class="rounded-xl border border-border bg-card p-6" style="box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.04), 0 12px 24px rgba(0,0,0,0.03);">
+        <div class="text-center mb-4">
+          <div class="w-10 h-10 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-3">
+            <i data-lucide="scan-search" class="w-5 h-5 text-primary"></i>
+          </div>
+          <h2 class="text-lg font-bold tracking-tight mb-0.5">Analyzing repository</h2>
+          <p class="text-muted-foreground text-xs">Scanning <span class="font-mono text-[10px]">${REPO}</span>...</p>
+        </div>
+        <div class="space-y-1.5">${items}</div>
+      </div>`;
+  },
+
+  renderStep4() {
+    const badgeColors = {
+      blue: { bg: 'bg-blue-500/15', text: 'text-blue-400', border: 'gradient-border-blue' },
+      purple: { bg: 'bg-purple-500/15', text: 'text-purple-400', border: 'gradient-border-purple' },
+      gray: { bg: 'bg-white/10', text: 'text-gray-400', border: 'gradient-border-gray' },
+    };
+    const cards = this.components.map((c, i) => {
+      const bc = badgeColors[c.color];
+      return `
+        <div class="${bc.border}">
+          <div class="rounded-[11px] bg-card p-4 h-full">
+            <div class="flex items-center gap-1.5 mb-2">
+              <code class="font-mono text-[10px] text-muted-foreground">${c.dir}</code>
+              <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full ${bc.bg} ${bc.text} text-[10px] font-semibold ml-auto">
+                <i data-lucide="${c.icon}" class="w-2.5 h-2.5"></i>
+                ${c.type}
+              </span>
+            </div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] text-muted-foreground">Public</span>
+              <button onclick="optA.toggleExpose(${i})" class="relative w-8 h-4 rounded-full toggle-track ${c.exposed ? 'bg-primary' : 'bg-white/15'}">
+                <div class="absolute top-0.5 ${c.exposed ? 'left-[15px]' : 'left-0.5'} w-3 h-3 rounded-full bg-white shadow toggle-thumb"></div>
+              </button>
+            </div>
+            <div class="text-[10px] ${c.exposed ? 'font-mono text-primary' : 'text-muted-foreground italic'}">
+              ${c.exposed ? c.name + '-slug.orbit.lustres.dev' : 'Internal only'}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="rounded-xl border border-border bg-card p-6" style="box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.04), 0 12px 24px rgba(0,0,0,0.03);">
+        <h2 class="text-lg font-bold tracking-tight mb-1">4 components detected</h2>
+        <p class="text-muted-foreground text-xs mb-4">Configure which ones get a public URL.</p>
+        <div class="grid grid-cols-2 gap-2.5 mb-4">${cards}</div>
+        <button onclick="optA.goTo(4)" class="btn-primary w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white">Confirm & Continue</button>
+      </div>`;
+  },
+
+  goTo(step) {
+    this.step = step;
+    this.render();
+  },
+
+  updateSlug() {
+    const el = document.getElementById('optA-slug');
+    if (el) {
+      const slug = (this.appName || 'my-app') + '-a3f9b2c1';
+      el.textContent = slug + '.orbit.lustres.dev';
+    }
+  },
+
+  toggleExpose(idx) {
+    this.components[idx].exposed = !this.components[idx].exposed;
+    this.render();
+  },
+
+  runAnalysis() {
+    const labels = ['Cloning repository', 'Detecting language & framework', 'Detecting components', 'Generating Dockerfiles'];
+    const details = ['', 'Python/FastAPI + React/Vite', '4 components found', '4 Dockerfiles generated'];
+    let idx = 0;
+    const interval = setInterval(() => {
+      const el = document.getElementById(`optA-astep-${idx}`);
+      if (el) {
+        const detail = details[idx] ? `<span class="text-[10px] text-muted-foreground ml-auto">${details[idx]}</span>` : '';
+        el.className = 'flex items-center gap-2 p-2 rounded-lg bg-green-500/5 completing';
+        el.innerHTML = `<div class="w-4 h-4 flex items-center justify-center text-green-400"><i data-lucide="check-circle-2" class="w-3 h-3"></i></div><span class="text-xs">${labels[idx]}</span>${detail}`;
+        lucide.createIcons();
+      }
+      idx++;
+      if (idx < 4) {
+        const next = document.getElementById(`optA-astep-${idx}`);
+        if (next) {
+          next.className = 'flex items-center gap-2 p-2 rounded-lg';
+          next.style.opacity = '1';
+          next.innerHTML = `<div class="w-4 h-4 flex items-center justify-center text-primary"><i data-lucide="loader-2" class="w-3 h-3 spinner"></i></div><span class="text-xs">${labels[idx]}</span>`;
+          lucide.createIcons();
+        }
+      }
+      if (idx >= 4) {
+        clearInterval(interval);
+        setTimeout(() => optA.goTo(4), 600);
+      }
+    }, 400);
+  }
+};
+
+
+// ═══════════════════════════════════════════
+// OPTION B — Full-Page Immersive
+// ═══════════════════════════════════════════
+const optB = {
+  step: 1,
+  appName: '',
+  components: cloneComponents(),
+
+  init() {
+    this.render();
+  },
+
+  render() {
+    const container = document.getElementById('optB-container');
+    let html = '';
+
+    // Pill-shaped step indicators
+    html += '<div class="flex items-center justify-center gap-2 mb-6">';
+    for (let i = 1; i <= 4; i++) {
+      const cls = i < this.step ? 'optB-pill completed' : i === this.step ? 'optB-pill active' : 'optB-pill inactive';
+      html += `<div class="${cls} px-3 py-1 rounded-full text-[10px] font-semibold">${STEPS[i-1]}</div>`;
+    }
+    html += '</div>';
+
+    // Big step number background
+    html += '<div class="relative">';
+    html += `<div class="absolute -top-4 -left-1 text-[80px] font-black leading-none text-white/[0.03] select-none pointer-events-none" style="font-family: Inter, sans-serif;">0${this.step}</div>`;
+
+    // Content
+    html += `<div class="relative slide-right">${this.renderCurrentStep()}</div>`;
+    html += '</div>';
+
+    container.innerHTML = html;
+    lucide.createIcons();
+
+    if (this.step === 3) this.runAnalysis();
+  },
+
+  renderCurrentStep() {
+    switch (this.step) {
+      case 1: return this.renderStep1();
+      case 2: return this.renderStep2();
+      case 3: return this.renderStep3();
+      case 4: return this.renderStep4();
+    }
+  },
+
+  renderStep1() {
+    const slug = (this.appName || 'my-app') + '-a3f9b2c1';
+    return `
+      <div class="pt-10">
+        <h2 class="text-2xl font-extrabold tracking-tight mb-2">What's your app called?</h2>
+        <p class="text-muted-foreground text-sm mb-8">We'll generate a unique URL for it.</p>
+        <input type="text" value="${this.appName}" oninput="optB.appName=this.value;optB.updateSlug()" class="orbit-input w-full rounded-xl px-5 py-4 text-base text-foreground font-mono bg-white/[0.04]" placeholder="my-awesome-app" id="optB-name" />
+        <div class="mt-4 mb-8 flex items-center gap-2">
+          <i data-lucide="globe" class="w-4 h-4 text-muted-foreground"></i>
+          <span class="font-mono text-sm text-primary font-medium" id="optB-slug">${slug}.orbit.lustres.dev</span>
+        </div>
+        <button onclick="optB.goTo(2)" class="btn-primary w-full rounded-xl px-6 py-4 text-base font-bold text-white">Continue</button>
+      </div>`;
+  },
+
+  renderStep2() {
+    return `
+      <div class="pt-10">
+        <h2 class="text-2xl font-extrabold tracking-tight mb-2">Connect your repo</h2>
+        <p class="text-muted-foreground text-sm mb-8">Link your GitHub repository to get started.</p>
+        <div class="rounded-2xl border border-green-500/20 bg-green-500/[0.06] p-6 mb-8">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-white/[0.06] flex items-center justify-center">
+              <i data-lucide="github" class="w-6 h-6"></i>
+            </div>
+            <div class="flex-1">
+              <p class="text-base font-semibold">${REPO}</p>
+              <p class="text-xs text-muted-foreground mt-0.5">Connected via GitHub App</p>
+            </div>
+            <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+              <i data-lucide="check" class="w-4 h-4 text-green-400"></i>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <button onclick="optB.goTo(1)" class="btn-secondary rounded-xl px-5 py-4 text-sm font-medium text-foreground">Back</button>
+          <button onclick="optB.goTo(3)" class="btn-primary flex-1 rounded-xl px-6 py-4 text-base font-bold text-white">Continue</button>
+        </div>
+      </div>`;
+  },
+
+  renderStep3() {
+    const labels = ['Cloning repository', 'Detecting stack', 'Finding components', 'Generating Dockerfiles'];
+    let items = '';
+    for (let i = 0; i < 4; i++) {
+      items += `
+        <div class="flex items-center gap-3 py-3 ${i === 0 ? '' : 'opacity-30'}" id="optB-astep-${i}">
+          <div class="w-5 h-5 flex items-center justify-center">
+            ${i === 0 ? '<i data-lucide="loader-2" class="w-4 h-4 text-primary spinner"></i>' : '<div class="w-2 h-2 rounded-full bg-white/20"></div>'}
+          </div>
+          <span class="text-sm font-medium">${labels[i]}</span>
+        </div>`;
+    }
+    return `
+      <div class="pt-10 text-center">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
+          <i data-lucide="scan-search" class="w-7 h-7 text-primary"></i>
+        </div>
+        <h2 class="text-2xl font-extrabold tracking-tight mb-1">Analyzing your repo</h2>
+        <p class="text-muted-foreground text-sm mb-8">Scanning <span class="font-mono text-xs">${REPO}</span></p>
+        <div class="text-left max-w-xs mx-auto">${items}</div>
+      </div>`;
+  },
+
+  renderStep4() {
+    const badgeColors = {
+      blue: { bg: 'bg-blue-500/15', text: 'text-blue-400', border: 'gradient-border-blue' },
+      purple: { bg: 'bg-purple-500/15', text: 'text-purple-400', border: 'gradient-border-purple' },
+      gray: { bg: 'bg-white/10', text: 'text-gray-400', border: 'gradient-border-gray' },
+    };
+    const cards = this.components.map((c, i) => {
+      const bc = badgeColors[c.color];
+      return `
+        <div class="${bc.border}">
+          <div class="rounded-[11px] bg-card p-4 h-full">
+            <div class="flex items-center gap-1.5 mb-2.5">
+              <code class="font-mono text-[10px] text-muted-foreground">${c.dir}</code>
+              <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full ${bc.bg} ${bc.text} text-[10px] font-semibold ml-auto">
+                <i data-lucide="${c.icon}" class="w-2.5 h-2.5"></i>
+                ${c.type}
+              </span>
+            </div>
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[10px] text-muted-foreground">Public</span>
+              <button onclick="optB.toggleExpose(${i})" class="relative w-8 h-4 rounded-full toggle-track ${c.exposed ? 'bg-primary' : 'bg-white/15'}">
+                <div class="absolute top-0.5 ${c.exposed ? 'left-[15px]' : 'left-0.5'} w-3 h-3 rounded-full bg-white shadow toggle-thumb"></div>
+              </button>
+            </div>
+            <div class="text-[10px] ${c.exposed ? 'font-mono text-primary' : 'text-muted-foreground italic'}">
+              ${c.exposed ? c.name + '-slug.orbit.lustres.dev' : 'Internal only'}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="pt-10">
+        <h2 class="text-2xl font-extrabold tracking-tight mb-2">We found 4 components</h2>
+        <p class="text-muted-foreground text-sm mb-6">Choose which ones get a public URL.</p>
+        <div class="grid grid-cols-2 gap-2.5 mb-6">${cards}</div>
+        <button onclick="optB.goTo(4)" class="btn-primary w-full rounded-xl px-6 py-4 text-base font-bold text-white">Confirm & Continue</button>
+      </div>`;
+  },
+
+  goTo(step) {
+    this.step = step;
+    this.render();
+  },
+
+  updateSlug() {
+    const el = document.getElementById('optB-slug');
+    if (el) {
+      const slug = (this.appName || 'my-app') + '-a3f9b2c1';
+      el.textContent = slug + '.orbit.lustres.dev';
+    }
+  },
+
+  toggleExpose(idx) {
+    this.components[idx].exposed = !this.components[idx].exposed;
+    this.render();
+  },
+
+  runAnalysis() {
+    const labels = ['Cloning repository', 'Detecting stack', 'Finding components', 'Generating Dockerfiles'];
+    const details = ['', 'Python/FastAPI + React/Vite', '4 components', '4 Dockerfiles'];
+    let idx = 0;
+    const interval = setInterval(() => {
+      const el = document.getElementById(`optB-astep-${idx}`);
+      if (el) {
+        const detail = details[idx] ? `<span class="text-xs text-muted-foreground ml-auto">${details[idx]}</span>` : '';
+        el.className = 'flex items-center gap-3 py-3 completing';
+        el.innerHTML = `<div class="w-5 h-5 flex items-center justify-center text-green-400"><i data-lucide="check-circle-2" class="w-4 h-4"></i></div><span class="text-sm font-medium">${labels[idx]}</span>${detail}`;
+        lucide.createIcons();
+      }
+      idx++;
+      if (idx < 4) {
+        const next = document.getElementById(`optB-astep-${idx}`);
+        if (next) {
+          next.className = 'flex items-center gap-3 py-3';
+          next.style.opacity = '1';
+          next.innerHTML = `<div class="w-5 h-5 flex items-center justify-center text-primary"><i data-lucide="loader-2" class="w-4 h-4 spinner"></i></div><span class="text-sm font-medium">${labels[idx]}</span>`;
+          lucide.createIcons();
+        }
+      }
+      if (idx >= 4) {
+        clearInterval(interval);
+        setTimeout(() => optB.goTo(4), 600);
+      }
+    }, 400);
+  }
+};
+
+
+// ═══════════════════════════════════════════
+// OPTION C — Conversational Flow
+// ═══════════════════════════════════════════
+const optC = {
+  step: 1,
+  appName: '',
+  components: cloneComponents(),
+  messages: [],
+
+  init() {
+    this.render();
+  },
+
+  render() {
+    const container = document.getElementById('optC-container');
+    let html = '';
+
+    // Dotted progress at top
+    html += '<div class="flex items-center justify-center gap-3 mb-5">';
+    for (let i = 1; i <= 4; i++) {
+      const isActive = i === this.step;
+      const isComplete = i < this.step;
+      if (isComplete) {
+        html += '<div class="w-2.5 h-2.5 rounded-full bg-primary"></div>';
+      } else if (isActive) {
+        html += '<div class="w-2.5 h-2.5 rounded-full bg-primary ring-4 ring-primary/20"></div>';
+      } else {
+        html += '<div class="w-2 h-2 rounded-full bg-white/10"></div>';
+      }
+      if (i < 4) {
+        html += `<div class="w-6 border-t ${i < this.step ? 'border-primary/40' : 'border-white/[0.06]'}" style="border-style: dotted;"></div>`;
+      }
+    }
+    html += '</div>';
+
+    // Chat area
+    html += '<div class="space-y-3">';
+    html += this.renderCurrentStep();
+    html += '</div>';
+
+    container.innerHTML = html;
+    lucide.createIcons();
+
+    if (this.step === 3) this.runAnalysis();
+
+    // Scroll to bottom
+    container.scrollTop = container.scrollHeight;
+  },
+
+  orbitMsg(content, extra = '') {
+    return `
+      <div class="flex gap-2.5 items-start">
+        <div class="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-orange-600 flex items-center justify-center shrink-0 mt-0.5">
+          <i data-lucide="orbit" class="w-3 h-3 text-white"></i>
+        </div>
+        <div class="chat-bubble-left px-4 py-3 max-w-[280px]">
+          <div class="text-sm">${content}</div>
+          ${extra}
+        </div>
+      </div>`;
+  },
+
+  userMsg(content) {
+    return `
+      <div class="flex justify-end">
+        <div class="chat-bubble-right px-4 py-3 max-w-[260px]">
+          <div class="text-sm">${content}</div>
+        </div>
+      </div>`;
+  },
+
+  renderCurrentStep() {
+    switch (this.step) {
+      case 1: return this.renderStep1();
+      case 2: return this.renderStep2();
+      case 3: return this.renderStep3();
+      case 4: return this.renderStep4();
+    }
+  },
+
+  renderStep1() {
+    const slug = (this.appName || 'my-app') + '-a3f9b2c1';
+    return `
+      ${this.orbitMsg("Hey! Let's get your app set up. What would you like to call it?")}
+      <div class="flex justify-end bubble-in" style="animation-delay: 0.15s;">
+        <div class="chat-bubble-right px-3 py-2.5 max-w-[260px]">
+          <input type="text" value="${this.appName}" oninput="optC.appName=this.value;optC.updateSlug()" class="bg-transparent border-none outline-none text-sm w-full text-foreground font-mono placeholder-white/30" placeholder="Type your app name..." id="optC-name" />
+        </div>
+      </div>
+      <div class="fade-up" style="animation-delay: 0.25s;">
+        ${this.orbitMsg('Your app will be at:', `<p class="font-mono text-xs text-primary mt-1.5" id="optC-slug">${slug}.orbit.lustres.dev</p>`)}
+      </div>
+      <div class="flex justify-end mt-2">
+        <button onclick="optC.goTo(2)" class="btn-primary rounded-full px-5 py-2 text-sm font-semibold text-white inline-flex items-center gap-1.5">
+          Looks good <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>`;
+  },
+
+  renderStep2() {
+    return `
+      ${this.orbitMsg("Great name! Now let's connect your GitHub repo.")}
+      <div class="fade-up" style="animation-delay: 0.2s;">
+        ${this.orbitMsg(`I found <span class="font-mono text-xs font-semibold">${REPO}</span> connected to your account.`,
+          `<div class="flex items-center gap-1.5 mt-2 text-green-400 text-xs"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i><span>Connected</span></div>`
+        )}
+      </div>
+      <div class="flex justify-end mt-2 gap-2">
+        <button onclick="optC.goTo(1)" class="btn-secondary rounded-full px-4 py-2 text-xs font-medium text-foreground">Back</button>
+        <button onclick="optC.goTo(3)" class="btn-primary rounded-full px-5 py-2 text-sm font-semibold text-white inline-flex items-center gap-1.5">
+          Use this repo <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>`;
+  },
+
+  renderStep3() {
+    const labels = ['Cloning repo', 'Detecting stack', 'Finding components', 'Generating Dockerfiles'];
+    let items = '';
+    for (let i = 0; i < 4; i++) {
+      items += `<div class="flex items-center gap-2 py-1 ${i === 0 ? '' : 'opacity-30'}" id="optC-astep-${i}">
+        <div class="w-4 h-4 flex items-center justify-center">
+          ${i === 0 ? '<i data-lucide="loader-2" class="w-3 h-3 text-primary spinner"></i>' : '<div class="w-1.5 h-1.5 rounded-full bg-white/20"></div>'}
+        </div>
+        <span class="text-xs">${labels[i]}</span>
+      </div>`;
+    }
+    return `
+      ${this.orbitMsg("Let me take a look at your repository...",
+        `<div class="mt-3 space-y-0.5">${items}</div>`
+      )}
+      <div class="flex gap-2 items-center text-muted-foreground text-xs ml-9">
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+      </div>`;
+  },
+
+  renderStep4() {
+    const badgeColors = {
+      blue: { bg: 'bg-blue-500/15', text: 'text-blue-400', border: 'gradient-border-blue' },
+      purple: { bg: 'bg-purple-500/15', text: 'text-purple-400', border: 'gradient-border-purple' },
+      gray: { bg: 'bg-white/10', text: 'text-gray-400', border: 'gradient-border-gray' },
+    };
+    const cards = this.components.map((c, i) => {
+      const bc = badgeColors[c.color];
+      return `
+        <div class="${bc.border}">
+          <div class="rounded-[11px] bg-card p-3 h-full">
+            <div class="flex items-center justify-between mb-1">
+              <code class="font-mono text-[10px] text-muted-foreground">${c.dir}</code>
+              <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full ${bc.bg} ${bc.text} text-[9px] font-semibold">
+                ${c.type}
+              </span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] text-muted-foreground">Public</span>
+              <button onclick="optC.toggleExpose(${i})" class="relative w-7 h-3.5 rounded-full toggle-track ${c.exposed ? 'bg-primary' : 'bg-white/15'}">
+                <div class="absolute top-0.5 ${c.exposed ? 'left-[13px]' : 'left-0.5'} w-2.5 h-2.5 rounded-full bg-white shadow toggle-thumb"></div>
+              </button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    return `
+      ${this.orbitMsg("I found <strong>4 components</strong> in your repo! Here's what I detected:",
+        `<div class="grid grid-cols-2 gap-2 mt-3">${cards}</div>`
+      )}
+      <div class="flex justify-end mt-2 gap-2">
+        <button onclick="optC.goTo(2)" class="btn-secondary rounded-full px-4 py-2 text-xs font-medium text-foreground">Back</button>
+        <button onclick="optC.goTo(4)" class="btn-primary rounded-full px-5 py-2 text-sm font-semibold text-white inline-flex items-center gap-1.5">
+          Confirm <i data-lucide="check" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>`;
+  },
+
+  goTo(step) {
+    this.step = step;
+    this.render();
+  },
+
+  updateSlug() {
+    const el = document.getElementById('optC-slug');
+    if (el) {
+      const slug = (this.appName || 'my-app') + '-a3f9b2c1';
+      el.textContent = slug + '.orbit.lustres.dev';
+    }
+  },
+
+  toggleExpose(idx) {
+    this.components[idx].exposed = !this.components[idx].exposed;
+    this.render();
+  },
+
+  runAnalysis() {
+    const labels = ['Cloning repo', 'Detecting stack', 'Finding components', 'Generating Dockerfiles'];
+    const details = ['', 'Python/FastAPI + React/Vite', '4 components', '4 Dockerfiles'];
+    let idx = 0;
+    const interval = setInterval(() => {
+      const el = document.getElementById(`optC-astep-${idx}`);
+      if (el) {
+        const detail = details[idx] ? `<span class="text-[10px] text-muted-foreground ml-auto">${details[idx]}</span>` : '';
+        el.className = 'flex items-center gap-2 py-1 completing';
+        el.innerHTML = `<div class="w-4 h-4 flex items-center justify-center text-green-400"><i data-lucide="check-circle-2" class="w-3 h-3"></i></div><span class="text-xs">${labels[idx]}</span>${detail}`;
+        lucide.createIcons();
+      }
+      idx++;
+      if (idx < 4) {
+        const next = document.getElementById(`optC-astep-${idx}`);
+        if (next) {
+          next.className = 'flex items-center gap-2 py-1';
+          next.style.opacity = '1';
+          next.innerHTML = `<div class="w-4 h-4 flex items-center justify-center text-primary"><i data-lucide="loader-2" class="w-3 h-3 spinner"></i></div><span class="text-xs">${labels[idx]}</span>`;
+          lucide.createIcons();
+        }
+      }
+      if (idx >= 4) {
+        clearInterval(interval);
+        setTimeout(() => optC.goTo(4), 600);
+      }
+    }, 400);
+  }
+};
+
+
+// ═══════════════════════════════════════════
+// Initialize all three options
+// ═══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  optA.init();
+  optB.init();
+  optC.init();
+});
+</script>
+</body>
+</html>

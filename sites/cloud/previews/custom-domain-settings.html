@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orbit — Custom Domain Settings</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            background: 'hsl(var(--background))',
+            foreground: 'hsl(var(--foreground))',
+            card: 'hsl(var(--card))',
+            'card-foreground': 'hsl(var(--card-foreground))',
+            border: 'hsl(var(--border))',
+            input: 'hsl(var(--input))',
+            primary: 'hsl(var(--primary))',
+            'primary-foreground': 'hsl(var(--primary-foreground))',
+            secondary: 'hsl(var(--secondary))',
+            'secondary-foreground': 'hsl(var(--secondary-foreground))',
+            muted: 'hsl(var(--muted))',
+            'muted-foreground': 'hsl(var(--muted-foreground))',
+            destructive: 'hsl(var(--destructive))',
+            ring: 'hsl(var(--ring))',
+          },
+          borderRadius: {
+            lg: '0.5rem',
+            md: 'calc(0.5rem - 2px)',
+            sm: 'calc(0.5rem - 4px)',
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    :root {
+      --background: 0 0% 100%;
+      --foreground: 224 71.4% 4.1%;
+      --card: 0 0% 100%;
+      --card-foreground: 224 71.4% 4.1%;
+      --border: 220 13% 91%;
+      --input: 220 13% 91%;
+      --primary: 24 95% 53%;
+      --primary-foreground: 0 0% 100%;
+      --secondary: 220 14.3% 95.9%;
+      --secondary-foreground: 220.9 39.3% 11%;
+      --muted: 220 14.3% 95.9%;
+      --muted-foreground: 220 8.9% 46.1%;
+      --destructive: 0 84.2% 60.2%;
+      --destructive-foreground: 0 0% 100%;
+      --ring: 24 95% 53%;
+    }
+    .dark {
+      --background: 148 50% 10%;
+      --foreground: 220 14% 96%;
+      --card: 150 46% 7%;
+      --card-foreground: 220 14% 96%;
+      --border: 0 0% 100% / 0.08;
+      --input: 0 0% 100% / 0.12;
+      --primary: 24 95% 53%;
+      --primary-foreground: 0 0% 100%;
+      --secondary: 150 30% 14%;
+      --secondary-foreground: 220 14% 96%;
+      --muted: 150 30% 14%;
+      --muted-foreground: 220 9% 64%;
+      --destructive: 0 63% 31%;
+      --destructive-foreground: 0 0% 100%;
+      --ring: 24 95% 53%;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+    }
+    * { border-color: hsl(var(--border)); }
+
+    /* Sidebar nav item hover */
+    .nav-item { transition: all 150ms ease; }
+    .nav-item:hover { background: hsl(var(--muted)); }
+    .nav-item.active { background: hsl(var(--muted)); color: hsl(var(--foreground)); }
+
+    /* Card entrance animation */
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-card { animation: fadeSlideUp 0.3s ease-out forwards; opacity: 0; }
+    .animate-card:nth-child(1) { animation-delay: 0ms; }
+    .animate-card:nth-child(2) { animation-delay: 75ms; }
+    .animate-card:nth-child(3) { animation-delay: 150ms; }
+    .animate-card:nth-child(4) { animation-delay: 225ms; }
+    .animate-card:nth-child(5) { animation-delay: 300ms; }
+
+    /* Copy button */
+    .copy-btn { transition: all 150ms ease; }
+    .copy-btn:hover { color: hsl(var(--foreground)); }
+
+    /* Input focus */
+    .domain-input:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px hsl(var(--ring) / 0.3);
+      border-color: hsl(var(--ring));
+    }
+
+    /* Pulsing dot */
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.75); }
+    }
+    .pulse-dot {
+      animation: pulse-dot 1.5s ease-in-out infinite;
+    }
+
+    /* CNAME details toggle */
+    .cname-details {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.25s ease-out, opacity 0.2s ease;
+      opacity: 0;
+    }
+    .cname-details.open {
+      max-height: 300px;
+      opacity: 1;
+    }
+    .cname-toggle-icon {
+      transition: transform 0.2s ease;
+    }
+    .cname-toggle-icon.open {
+      transform: rotate(180deg);
+    }
+  </style>
+</head>
+<body class="bg-background text-foreground min-h-screen">
+  <div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <aside class="w-64 border-r border-border/50 bg-card flex flex-col flex-shrink-0">
+      <!-- Logo -->
+      <div class="p-5 border-b border-border/50">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-[0_2px_8px_rgba(234,88,12,0.3)]">
+            <span class="text-white font-bold text-sm">O</span>
+          </div>
+          <span class="text-lg font-semibold tracking-tight">Orbit</span>
+        </div>
+      </div>
+
+      <!-- Workspace selector -->
+      <div class="px-3 py-3 border-b border-border/50">
+        <div class="flex items-center gap-2 px-2 py-2 rounded-md bg-muted/50 border border-border/30">
+          <div class="w-6 h-6 rounded bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center text-[10px] text-white font-bold">OK</div>
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-medium truncate">oktradesystem</p>
+            <p class="text-[10px] text-muted-foreground truncate">a3f9b2c1</p>
+          </div>
+          <i data-lucide="chevrons-up-down" class="w-3.5 h-3.5 text-muted-foreground"></i>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 px-3 py-4 space-y-1">
+        <a href="#" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-muted-foreground">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+          Overview
+        </a>
+        <a href="#" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-muted-foreground">
+          <i data-lucide="rocket" class="w-4 h-4"></i>
+          Deployments
+        </a>
+        <a href="#" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-muted-foreground">
+          <i data-lucide="bot" class="w-4 h-4"></i>
+          Agent
+        </a>
+        <a href="#" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-muted-foreground">
+          <i data-lucide="scroll-text" class="w-4 h-4"></i>
+          Logs
+        </a>
+        <a href="#" class="nav-item active flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium">
+          <i data-lucide="globe" class="w-4 h-4 text-primary"></i>
+          Domain
+        </a>
+        <a href="#" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-muted-foreground">
+          <i data-lucide="settings" class="w-4 h-4"></i>
+          Settings
+        </a>
+      </nav>
+
+      <!-- User -->
+      <div class="p-3 border-t border-border/50">
+        <div class="flex items-center gap-2.5 px-2 py-1.5">
+          <div class="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-[11px] text-white font-bold">JD</div>
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-medium truncate">Jane Developer</p>
+            <p class="text-[10px] text-muted-foreground truncate">jane@oktradesystem.com</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="flex-1 overflow-y-auto">
+      <div class="max-w-3xl mx-auto p-6 lg:p-8 space-y-6">
+        <!-- Page header -->
+        <div class="animate-card">
+          <h1 class="text-2xl font-bold tracking-tight">Domains</h1>
+          <p class="text-muted-foreground text-sm mt-1">Configure custom domains for each component of your application</p>
+        </div>
+
+        <!-- Orbit Subdomain Card -->
+        <div class="animate-card rounded-lg border border-border/50 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.06),0_4px_8px_rgba(0,0,0,0.04),0_12px_24px_rgba(0,0,0,0.03)]">
+          <div class="p-6 pb-3">
+            <div class="flex items-center gap-2 mb-1">
+              <i data-lucide="globe" class="w-4 h-4 text-primary"></i>
+              <h2 class="text-base font-semibold tracking-tight">Orbit Subdomain</h2>
+            </div>
+            <p class="text-sm text-muted-foreground">Your default platform URLs — always active</p>
+          </div>
+          <div class="px-6 pb-6 pt-3 space-y-2">
+            <div class="flex items-center justify-between p-3 rounded-md bg-muted/50 border border-border/50 transition-all duration-200 hover:bg-muted/70">
+              <div class="flex items-center gap-3 min-w-0">
+                <span class="inline-flex items-center rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-semibold text-blue-400 uppercase tracking-wider">API</span>
+                <a href="#" class="font-mono text-sm text-primary hover:underline transition-colors duration-150 truncate">
+                  oktradesystem-a3f9b2c1.orbit.lustres.dev
+                </a>
+              </div>
+              <button onclick="copyToClipboard('https://oktradesystem-a3f9b2c1.orbit.lustres.dev', this)" class="copy-btn flex items-center gap-1.5 text-xs text-muted-foreground flex-shrink-0 ml-3" title="Copy to clipboard">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                Copy
+              </button>
+            </div>
+            <div class="flex items-center justify-between p-3 rounded-md bg-muted/50 border border-border/50 transition-all duration-200 hover:bg-muted/70">
+              <div class="flex items-center gap-3 min-w-0">
+                <span class="inline-flex items-center rounded-full bg-purple-500/20 px-2 py-0.5 text-[10px] font-semibold text-purple-400 uppercase tracking-wider">App</span>
+                <a href="#" class="font-mono text-sm text-primary hover:underline transition-colors duration-150 truncate">
+                  oktradesystem-a3f9b2c1-app.orbit.lustres.dev
+                </a>
+              </div>
+              <button onclick="copyToClipboard('https://oktradesystem-a3f9b2c1-app.orbit.lustres.dev', this)" class="copy-btn flex items-center gap-1.5 text-xs text-muted-foreground flex-shrink-0 ml-3" title="Copy to clipboard">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                Copy
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== COMPONENT DOMAIN CARDS ===== -->
+
+        <!-- Card 1: Backend — Active -->
+        <div class="animate-card rounded-lg border border-border/50 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.06),0_4px_8px_rgba(0,0,0,0.04),0_12px_24px_rgba(0,0,0,0.03)] overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200">
+          <!-- Gradient header bar -->
+          <div class="h-1 bg-gradient-to-r from-blue-500 to-cyan-400"></div>
+          <div class="p-6 space-y-4">
+            <!-- Title row -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/10 flex items-center justify-center">
+                  <i data-lucide="server" class="w-4.5 h-4.5 text-blue-400"></i>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-sm font-semibold tracking-tight">Backend</h3>
+                    <span class="inline-flex items-center rounded-full bg-blue-500/15 border border-blue-500/25 px-2 py-0.5 text-[10px] font-semibold text-blue-400 uppercase tracking-wider">Backend</span>
+                  </div>
+                  <p class="text-xs text-muted-foreground mt-0.5 font-mono">oktradesystem-a3f9b2c1.orbit.lustres.dev</p>
+                </div>
+              </div>
+              <span class="inline-flex items-center gap-1.5 rounded-full border border-green-500/30 bg-green-500/15 px-2.5 py-1 text-xs font-medium text-green-400">
+                <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+                Active
+              </span>
+            </div>
+
+            <!-- Custom domain input -->
+            <div>
+              <label class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Custom Domain</label>
+              <div class="flex gap-2 mt-1.5">
+                <input
+                  type="text"
+                  class="domain-input flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm font-mono transition-all duration-150"
+                  value="api.oktrading.com"
+                />
+                <button onclick="handleSave(this)" class="save-btn inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-[0_1px_2px_rgba(0,0,0,0.1),0_2px_4px_rgba(0,0,0,0.06)] hover:bg-[hsl(24,95%,48%)] hover:shadow-[0_2px_6px_rgba(234,88,12,0.3)] active:scale-[0.98] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+                  Save
+                </button>
+              </div>
+            </div>
+
+            <!-- Active domain info -->
+            <div class="flex items-center justify-between p-3 rounded-md bg-green-500/5 border border-green-500/15 transition-all duration-200">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-7 h-7 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                  <i data-lucide="shield-check" class="w-3.5 h-3.5 text-green-400"></i>
+                </div>
+                <div class="min-w-0">
+                  <p class="font-mono text-sm truncate">api.oktrading.com</p>
+                  <p class="text-xs text-muted-foreground mt-0.5">TLS active — valid until Apr 21, 2026</p>
+                </div>
+              </div>
+              <button onclick="copyToClipboard('api.oktrading.com', this)" class="copy-btn flex items-center gap-1.5 text-xs text-muted-foreground flex-shrink-0 ml-3" title="Copy domain">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                Copy
+              </button>
+            </div>
+
+            <!-- CNAME collapsible (collapsed for Active) -->
+            <div>
+              <button onclick="toggleCname(this)" class="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors duration-150">
+                <i data-lucide="chevron-down" class="w-3.5 h-3.5 cname-toggle-icon"></i>
+                DNS configuration
+              </button>
+              <div class="cname-details mt-2">
+                <div class="rounded-md border border-border/50 overflow-hidden text-sm">
+                  <table class="w-full">
+                    <thead>
+                      <tr class="border-b border-border/50 bg-muted/30">
+                        <th class="text-left px-3 py-2 font-medium text-muted-foreground text-[10px] uppercase tracking-wider">Type</th>
+                        <th class="text-left px-3 py-2 font-medium text-muted-foreground text-[10px] uppercase tracking-wider">Name</th>
+                        <th class="text-left px-3 py-2 font-medium text-muted-foreground text-[10px] uppercase tracking-wider">Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="px-3 py-2.5 font-mono text-xs">CNAME</td>
+                        <td class="px-3 py-2.5 font-mono text-xs text-muted-foreground">api.oktrading.com</td>
+                        <td class="px-3 py-2.5">
+                          <div class="flex items-center gap-2">
+                            <span class="font-mono text-xs">oktradesystem-a3f9b2c1.orbit.lustres.dev</span>
+                            <button onclick="copyToClipboard('oktradesystem-a3f9b2c1.orbit.lustres.dev', this)" class="copy-btn text-muted-foreground" title="Copy">
+                              <i data-lucide="copy" class="w-3 h-3"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Frontend — Pending DNS -->
+        <div class="animate-card rounded-lg border border-border/50 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.06),0_4px_8px_rgba(0,0,0,0.04),0_12px_24px_rgba(0,0,0,0.03)] overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200">
+          <!-- Gradient header bar -->
+          <div class="h-1 bg-gradient-to-r from-purple-500 to-pink-400"></div>
+          <div class="p-6 space-y-4">
+            <!-- Title row -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/10 flex items-center justify-center">
+                  <i data-lucide="layout-template" class="w-4.5 h-4.5 text-purple-400"></i>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-sm font-semibold tracking-tight">Frontend</h3>
+                    <span class="inline-flex items-center rounded-full bg-purple-500/15 border border-purple-500/25 px-2 py-0.5 text-[10px] font-semibold text-purple-400 uppercase tracking-wider">Frontend</span>
+                  </div>
+                  <p class="text-xs text-muted-foreground mt-0.5 font-mono">oktradesystem-a3f9b2c1-app.orbit.lustres.dev</p>
+                </div>
+              </div>
+              <span class="inline-flex items-center gap-1.5 rounded-full border border-yellow-500/30 bg-yellow-500/15 px-2.5 py-1 text-xs font-medium text-yellow-400">
+                <span class="w-1.5 h-1.5 rounded-full bg-yellow-400 pulse-dot"></span>
+                Pending DNS
+              </span>
+            </div>
+
+            <!-- Custom domain input -->
+            <div>
+              <label class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Custom Domain</label>
+              <div class="flex gap-2 mt-1.5">
+                <input
+                  type="text"
+                  class="domain-input flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm font-mono transition-all duration-150"
+                  value="app.oktrading.com"
+                />
+                <button onclick="handleSave(this)" class="save-btn inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-[0_1px_2px_rgba(0,0,0,0.1),0_2px_4px_rgba(0,0,0,0.06)] hover:bg-[hsl(24,95%,48%)] hover:shadow-[0_2px_6px_rgba(234,88,12,0.3)] active:scale-[0.98] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+                  Save
+                </button>
+              </div>
+            </div>
+
+            <!-- Pending DNS info -->
+            <div class="flex items-center justify-between p-3 rounded-md bg-yellow-500/5 border border-yellow-500/15 transition-all duration-200">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-7 h-7 rounded-full bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+                  <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-yellow-400"></i>
+                </div>
+                <div class="min-w-0">
+                  <p class="font-mono text-sm truncate">app.oktrading.com</p>
+                  <p class="text-xs text-muted-foreground mt-0.5">Waiting for DNS propagation — can take up to 30 min</p>
+                </div>
+              </div>
+              <button onclick="copyToClipboard('app.oktrading.com', this)" class="copy-btn flex items-center gap-1.5 text-xs text-muted-foreground flex-shrink-0 ml-3" title="Copy domain">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                Copy
+              </button>
+            </div>
+
+            <!-- CNAME collapsible (expanded for Pending DNS) -->
+            <div>
+              <button onclick="toggleCname(this)" class="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors duration-150">
+                <i data-lucide="chevron-down" class="w-3.5 h-3.5 cname-toggle-icon open"></i>
+                DNS configuration
+              </button>
+              <div class="cname-details open mt-2">
+                <div class="rounded-md border border-border/50 overflow-hidden text-sm">
+                  <table class="w-full">
+                    <thead>
+                      <tr class="border-b border-border/50 bg-muted/30">
+                        <th class="text-left px-3 py-2 font-medium text-muted-foreground text-[10px] uppercase tracking-wider">Type</th>
+                        <th class="text-left px-3 py-2 font-medium text-muted-foreground text-[10px] uppercase tracking-wider">Name</th>
+                        <th class="text-left px-3 py-2 font-medium text-muted-foreground text-[10px] uppercase tracking-wider">Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="px-3 py-2.5 font-mono text-xs">CNAME</td>
+                        <td class="px-3 py-2.5 font-mono text-xs text-muted-foreground">app.oktrading.com</td>
+                        <td class="px-3 py-2.5">
+                          <div class="flex items-center gap-2">
+                            <span class="font-mono text-xs">oktradesystem-a3f9b2c1-app.orbit.lustres.dev</span>
+                            <button onclick="copyToClipboard('oktradesystem-a3f9b2c1-app.orbit.lustres.dev', this)" class="copy-btn text-muted-foreground" title="Copy">
+                              <i data-lucide="copy" class="w-3 h-3"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="mt-3 rounded-md bg-muted/30 border border-border/40 p-3 space-y-1.5">
+                  <div class="flex items-center gap-1.5">
+                    <i data-lucide="info" class="w-3.5 h-3.5 text-muted-foreground"></i>
+                    <p class="text-xs font-medium">Setup steps</p>
+                  </div>
+                  <ol class="text-xs text-muted-foreground space-y-1 list-decimal list-inside ml-0.5">
+                    <li>Log in to your DNS provider (Cloudflare, Route 53, etc.)</li>
+                    <li>Add a <code class="font-mono text-foreground bg-muted/50 px-1 py-0.5 rounded text-[10px]">CNAME</code> record with the values above</li>
+                    <li>DNS propagation typically takes 5–30 minutes</li>
+                    <li>HTTPS is provisioned automatically once DNS is verified</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // Copy to clipboard with "Copied!" feedback
+    function copyToClipboard(text, btn) {
+      navigator.clipboard.writeText(text).then(() => {
+        const iconEl = btn.querySelector('[data-lucide]');
+        const textNode = Array.from(btn.childNodes).find(n => n.nodeType === 3 && n.textContent.trim());
+        const origIcon = iconEl.getAttribute('data-lucide');
+        const origText = textNode ? textNode.textContent : '';
+
+        iconEl.setAttribute('data-lucide', 'check');
+        if (textNode) textNode.textContent = ' Copied!';
+        btn.classList.add('text-green-400');
+        lucide.createIcons();
+
+        setTimeout(() => {
+          iconEl.setAttribute('data-lucide', origIcon);
+          if (textNode) textNode.textContent = origText;
+          btn.classList.remove('text-green-400');
+          lucide.createIcons();
+        }, 2000);
+      });
+    }
+
+    // Toggle CNAME details section
+    function toggleCname(btn) {
+      const details = btn.nextElementSibling;
+      const icon = btn.querySelector('.cname-toggle-icon');
+      details.classList.toggle('open');
+      icon.classList.toggle('open');
+    }
+
+    // Save button simulation
+    function handleSave(btn) {
+      const origText = btn.textContent;
+      btn.innerHTML = '<svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.25"/><path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+      btn.disabled = true;
+      btn.classList.add('opacity-70');
+
+      setTimeout(() => {
+        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Saved';
+        btn.classList.remove('opacity-70');
+        btn.classList.add('bg-green-600', 'hover:bg-green-600');
+        setTimeout(() => {
+          btn.textContent = origText;
+          btn.disabled = false;
+          btn.classList.remove('bg-green-600', 'hover:bg-green-600');
+        }, 1500);
+      }, 1000);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Orbit — Onboarding Flow Preview</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        background: 'hsl(148 50% 10%)',
+        foreground: 'hsl(220 14% 96%)',
+        card: 'hsl(150 46% 7%)',
+        'card-foreground': 'hsl(220 14% 96%)',
+        border: 'rgba(255,255,255,0.08)',
+        input: 'rgba(255,255,255,0.12)',
+        primary: 'hsl(24 95% 53%)',
+        'primary-foreground': 'hsl(0 0% 100%)',
+        secondary: 'hsl(150 30% 14%)',
+        'secondary-foreground': 'hsl(220 14% 96%)',
+        muted: 'hsl(150 30% 14%)',
+        'muted-foreground': 'hsl(220 9% 64%)',
+        accent: 'hsl(150 30% 14%)',
+        ring: 'hsl(24 95% 53%)',
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+      },
+    }
+  }
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  * { border-color: rgba(255,255,255,0.08); }
+  body { background: hsl(148 50% 10%); color: hsl(220 14% 96%); font-family: 'Inter', system-ui, sans-serif; }
+
+  /* Step transitions */
+  .step-content {
+    animation: stepIn 0.35s ease-out;
+  }
+  @keyframes stepIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Spinner */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { animation: spin 1s linear infinite; }
+
+  /* Shimmer for progress items */
+  @keyframes shimmer {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+  }
+  .shimmer { animation: shimmer 1.5s ease-in-out infinite; }
+
+  /* Gradient border card */
+  .gradient-border {
+    background: linear-gradient(135deg, hsl(24 95% 53% / 0.4), hsl(280 80% 55% / 0.3), hsl(24 95% 53% / 0.2));
+    padding: 1px;
+    border-radius: 0.75rem;
+  }
+  .gradient-border-blue {
+    background: linear-gradient(135deg, hsl(210 90% 55% / 0.4), hsl(180 70% 45% / 0.3));
+    padding: 1px;
+    border-radius: 0.75rem;
+  }
+  .gradient-border-purple {
+    background: linear-gradient(135deg, hsl(270 80% 60% / 0.4), hsl(310 70% 50% / 0.3));
+    padding: 1px;
+    border-radius: 0.75rem;
+  }
+  .gradient-border-gray {
+    background: linear-gradient(135deg, hsl(220 10% 50% / 0.4), hsl(220 10% 35% / 0.3));
+    padding: 1px;
+    border-radius: 0.75rem;
+  }
+
+  /* Radio card */
+  .radio-card {
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  .radio-card:hover { transform: translateY(-1px); }
+  .radio-card.selected {
+    border-color: hsl(24 95% 53%);
+    box-shadow: 0 0 0 1px hsl(24 95% 53% / 0.3), 0 4px 12px hsl(24 95% 53% / 0.1);
+  }
+
+  /* Button hover */
+  .btn-primary {
+    background: linear-gradient(135deg, hsl(24 95% 53%), hsl(20 90% 48%));
+    transition: all 0.15s ease;
+  }
+  .btn-primary:hover {
+    background: linear-gradient(135deg, hsl(24 95% 58%), hsl(20 90% 53%));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px hsl(24 95% 53% / 0.3);
+  }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-secondary {
+    background: hsl(150 30% 14%);
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: all 0.15s ease;
+  }
+  .btn-secondary:hover {
+    background: hsl(150 30% 18%);
+    border-color: rgba(255,255,255,0.2);
+  }
+
+  /* Input */
+  .orbit-input {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: all 0.15s ease;
+  }
+  .orbit-input:focus {
+    outline: none;
+    border-color: hsl(24 95% 53%);
+    box-shadow: 0 0 0 3px hsl(24 95% 53% / 0.15);
+  }
+
+  /* Progress step animation */
+  .progress-item {
+    transition: all 0.3s ease;
+  }
+  .progress-item.completing {
+    animation: completeStep 0.4s ease-out;
+  }
+  @keyframes completeStep {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+  }
+
+  /* Stagger children */
+  .stagger > :nth-child(1) { animation-delay: 0ms; }
+  .stagger > :nth-child(2) { animation-delay: 75ms; }
+  .stagger > :nth-child(3) { animation-delay: 150ms; }
+  .stagger > :nth-child(4) { animation-delay: 225ms; }
+  .stagger > :nth-child(5) { animation-delay: 300ms; }
+
+  /* Feedback textarea */
+  .feedback-area {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+    opacity: 0;
+  }
+  .feedback-area.open {
+    max-height: 200px;
+    opacity: 1;
+  }
+
+  /* Page bg gradient */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse at 20% 0%, hsl(24 95% 53% / 0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 100%, hsl(150 50% 20% / 0.15) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+</style>
+</head>
+<body class="min-h-screen flex items-start justify-center px-4 py-8 sm:py-12 relative">
+
+<div class="w-full max-w-2xl relative z-10">
+  <!-- Header -->
+  <div class="text-center mb-8">
+    <div class="inline-flex items-center gap-2 mb-4">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-orange-600 flex items-center justify-center">
+        <i data-lucide="orbit" class="w-5 h-5 text-white"></i>
+      </div>
+      <span class="text-xl font-bold tracking-tight">Orbit</span>
+    </div>
+  </div>
+
+  <!-- Step indicator -->
+  <div id="step-indicator" class="flex items-center justify-center gap-0 mb-10 px-4">
+    <!-- Generated by JS -->
+  </div>
+
+  <!-- Step container -->
+  <div id="step-container">
+    <!-- Steps rendered by JS -->
+  </div>
+</div>
+
+<script>
+const APP_NAME = 'oktrading';
+const SLUG = 'oktrading-a3f9b2c1';
+const DOMAIN = `${SLUG}.orbit.lustres.dev`;
+const REPO = 'Sunnepah/oktradesystem';
+const TOTAL_STEPS = 7;
+
+let currentStep = 1;
+let dbMode = 'managed';
+let byoConnected = false;
+let feedbackOpen = false;
+
+function renderStepIndicator() {
+  const container = document.getElementById('step-indicator');
+  let html = '';
+  for (let i = 1; i <= TOTAL_STEPS; i++) {
+    const isActive = i === currentStep;
+    const isComplete = i < currentStep;
+    const dotClass = isComplete
+      ? 'w-8 h-8 rounded-full flex items-center justify-center bg-primary text-white text-xs font-semibold'
+      : isActive
+        ? 'w-8 h-8 rounded-full flex items-center justify-center bg-primary text-white text-xs font-bold ring-4 ring-primary/20'
+        : 'w-8 h-8 rounded-full flex items-center justify-center bg-secondary text-muted-foreground text-xs font-medium';
+
+    html += `<div class="${dotClass}">`;
+    if (isComplete) {
+      html += `<i data-lucide="check" class="w-4 h-4"></i>`;
+    } else {
+      html += i;
+    }
+    html += `</div>`;
+
+    if (i < TOTAL_STEPS) {
+      const lineClass = i < currentStep
+        ? 'w-6 sm:w-10 h-0.5 bg-primary'
+        : 'w-6 sm:w-10 h-0.5 bg-secondary';
+      html += `<div class="${lineClass}"></div>`;
+    }
+  }
+  container.innerHTML = html;
+  lucide.createIcons();
+}
+
+function goTo(step) {
+  currentStep = step;
+  renderStepIndicator();
+  renderStep();
+}
+
+function renderStep() {
+  const container = document.getElementById('step-container');
+  let html = '';
+
+  switch (currentStep) {
+    case 1: html = renderStep1(); break;
+    case 2: html = renderStep2(); break;
+    case 3: html = renderStep3(); break;
+    case 4: html = renderStep4(); break;
+    case 5: html = renderStep5(); break;
+    case 6: html = renderStep6(); break;
+    case 7: html = renderStep7(); break;
+  }
+
+  container.innerHTML = `<div class="step-content">${html}</div>`;
+  lucide.createIcons();
+
+  // Auto-advance for step 3
+  if (currentStep === 3) {
+    runAnalysisAnimation();
+  }
+  // Auto-animate step 7
+  if (currentStep === 7) {
+    runBuildAnimation();
+  }
+}
+
+/* ── Step 1: App Name ── */
+function renderStep1() {
+  return `
+    <div class="rounded-xl border border-border bg-card p-8" style="box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.04), 0 12px 24px rgba(0,0,0,0.03);">
+      <h2 class="text-2xl font-bold tracking-tight mb-2">Name your app</h2>
+      <p class="text-muted-foreground text-sm mb-6">Choose a name for your application. We'll generate a unique URL for it.</p>
+
+      <label class="block text-sm font-medium mb-2">App name</label>
+      <input
+        type="text"
+        value="${APP_NAME}"
+        class="orbit-input w-full rounded-lg px-4 py-3 text-sm text-foreground font-mono mb-4"
+        placeholder="my-awesome-app"
+        readonly
+      />
+
+      <div class="rounded-lg bg-secondary/60 border border-border px-4 py-3 mb-6">
+        <div class="flex items-center gap-2 text-sm">
+          <i data-lucide="globe" class="w-4 h-4 text-muted-foreground"></i>
+          <span class="text-muted-foreground">Your app will be available at:</span>
+        </div>
+        <p class="font-mono text-sm mt-1 text-primary font-medium">${DOMAIN}</p>
+      </div>
+
+      <button onclick="goTo(2)" class="btn-primary w-full rounded-lg px-6 py-3 text-sm font-semibold text-white">
+        Continue
+      </button>
+    </div>
+  `;
+}
+
+/* ── Step 2: GitHub ── */
+function renderStep2() {
+  return `
+    <div class="rounded-xl border border-border bg-card p-8" style="box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.04), 0 12px 24px rgba(0,0,0,0.03);">
+      <h2 class="text-2xl font-bold tracking-tight mb-2">Connect GitHub</h2>
+      <p class="text-muted-foreground text-sm mb-6">Link your repository so Orbit can analyze and deploy your code.</p>
+
+      <div class="rounded-lg border border-green-500/30 bg-green-500/10 p-4 mb-6">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
+            <i data-lucide="github" class="w-5 h-5"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold">${REPO}</p>
+            <p class="text-xs text-muted-foreground">Connected via GitHub App</p>
+          </div>
+          <div class="flex items-center gap-1.5 text-green-400">
+            <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+            <span class="text-xs font-medium">Connected</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button onclick="goTo(1)" class="btn-secondary rounded-lg px-5 py-3 text-sm font-medium text-foreground">
+          Back
+        </button>
+        <button onclick="goTo(3)" class="btn-primary flex-1 rounded-lg px-6 py-3 text-sm font-semibold text-white">
+          Continue
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+/* ── Step 3: Analyzing ── */
+function renderStep3() {
+  return `
+    <div class="rounded-xl border border-border bg-card p-8" style="box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.04), 0 12px 24px rgba(0,0,0,0.03);">
+      <div class="text-center mb-6">
+        <div class="w-12 h-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
+          <i data-lucide="scan-search" class="w-6 h-6 text-primary"></i>
+        </div>
+        <h2 class="text-2xl font-bold tracking-tight mb-1">Analyzing repository</h2>
+        <p class="text-muted-foreground text-sm">Scanning <span class="font-mono text-xs">${REPO}</span> to detect your stack...</p>
+      </div>
+
+      <div class="space-y-3" id="analysis-steps">
+        <div class="flex items-center gap-3 p-3 rounded-lg" id="astep-0">
+          <div class="w-5 h-5 flex items-center justify-center text-muted-foreground">
+            <i data-lucide="loader-2" class="w-4 h-4 spinner"></i>
+          </div>
+          <span class="text-sm">Cloning repository</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-lg opacity-40" id="astep-1">
+          <div class="w-5 h-5 flex items-center justify-center text-muted-foreground">
+            <div class="w-2 h-2 rounded-full bg-muted-foreground/40"></div>
+          </div>
+          <span class="text-sm">Detecting language & framework</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-lg opacity-40" id="astep-2">
+          <div class="w-5 h-5 flex items-center justify-center text-muted-foreground">
+            <div class="w-2 h-2 rounded-full bg-muted-foreground/40"></div>
+          </div>
+          <span class="text-sm">Detecting components</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-lg opacity-40" id="astep-3">
+          <div class="w-5 h-5 flex items-center justify-center text-muted-foreground">
+            <div class="w-2 h-2 rounded-full bg-muted-foreground/40"></div>
+          </div>
+          <span class="text-sm">Generating Dockerfiles</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+const analysisLabels = [
+  'Cloning repository',
+  'Detecting language & framework',
+  'Detecting components',
+  'Generating Dockerfiles',
+];
+const analysisDetails = [
+  '',
+  'Python/FastAPI + React/Vite detected',
+  '4 components found',
+  '4 Dockerfiles generated',
+];
+
+function runAnalysisAnimation() {
+  let idx = 0;
+  const interval = setInterval(() => {
+    completeAnalysisStep(idx);
+    idx++;
+    if (idx < 4) {
+      activateAnalysisStep(idx);
+    }
+    if (idx >= 4) {
+      clearInterval(interval);
+      setTimeout(() => goTo(4), 800);
+    }
+  }, 500);
+}
+
+function completeAnalysisStep(i) {
+  const el = document.getElementById(`astep-${i}`);
+  if (!el) return;
+  const detail = analysisDetails[i] ? `<span class="text-xs text-muted-foreground ml-auto">${analysisDetails[i]}</span>` : '';
+  el.className = 'flex items-center gap-3 p-3 rounded-lg bg-green-500/5 progress-item completing';
+  el.innerHTML = `
+    <div class="w-5 h-5 flex items-center justify-center text-green-400">
+      <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+    </div>
+    <span class="text-sm">${analysisLabels[i]}</span>
+    ${detail}
+  `;
+  lucide.createIcons();
+}
+
+function activateAnalysisStep(i) {
+  const el = document.getElementById(`astep-${i}`);
+  if (!el) return;
+  el.className = 'flex items-center gap-3 p-3 rounded-lg';
+  el.style.opacity = '1';
+  el.innerHTML = `
+    <div class="w-5 h-5 flex items-center justify-center text-primary">
+      <i data-lucide="loader-2" class="w-4 h-4 spinner"></i>
+    </div>
+    <span class="text-sm">${analysisLabels[i]}</span>
+  `;
+  lucide.createIcons();
+}
+
+/* ── Step 4: Confirm Components ── */
+const components = [
+  { dir: '/api', type: 'Backend', color: 'blue', icon: 'server', name: 'api', exposed: true },
+  { dir: '/admin-api', type: 'Backend', color: 'blue', icon: 'server', name: 'admin-api', exposed: true },
+  { dir: '/frontend', type: 'Frontend', color: 'purple', icon: 'monitor', name: 'frontend', exposed: true },
+  { dir: '/worker', type: 'Worker', color: 'gray', icon: 'cog', name: 'worker', exposed: false },
+];
+
+function toggleExpose(idx) {
+  components[idx].exposed = !components[idx].exposed;
+  renderStep();
+}
+
+function updateComponentName(idx, val) {
+  components[idx].name = val;
+  // Re-render just the URL area for this component
+  const urlEl = document.getElementById(`comp-url-${idx}`);
+  if (urlEl) {
+    if (components[idx].exposed) {
+      urlEl.innerHTML = `<span class="font-mono text-xs text-primary">${val}-${SLUG}.orbit.lustres.dev</span>`;
+    }
+  }
+}
+
+function renderStep4() {
+  const badgeColors = {
+    blue: { bg: 'bg-blue-500/15', text: 'text-blue-400', border: 'gradient-border-blue' },
+    purple: { bg: 'bg-purple-500/15', text: 'text-purple-400', border: 'gradient-border-purple' },
+    gray: { bg: 'bg-white/10', text: 'text-gray-400', border: 'gradient-border-gray' },
+  };
+
+  const cards = components.map((c, i) => {
+    const bc = badgeColors[c.color];
+    const urlLine = c.exposed
+      ? `<span class="font-mono text-xs text-primary">${c.name}-${SLUG}.orbit.lustres.dev</span>`
+      : `<span class="text-xs text-muted-foreground italic">Internal only — no public URL</span>`;
+
+    return `
+      <div class="${bc.border}">
+        <div class="rounded-[11px] bg-card p-5 h-full">
+          <div class="flex items-center gap-2 mb-3">
+            <code class="font-mono text-xs text-muted-foreground">${c.dir}</code>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${bc.bg} ${bc.text} text-[11px] font-semibold ml-auto">
+              <i data-lucide="${c.icon}" class="w-3 h-3"></i>
+              ${c.type}
+            </span>
+          </div>
+
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs text-muted-foreground mb-1">Name</label>
+              <input
+                type="text"
+                value="${c.name}"
+                oninput="updateComponentName(${i}, this.value)"
+                class="orbit-input w-full rounded-lg px-3 py-2 text-sm text-foreground font-mono"
+              />
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-muted-foreground">Expose publicly</span>
+              <button onclick="toggleExpose(${i})" class="relative w-9 h-5 rounded-full transition-colors ${c.exposed ? 'bg-primary' : 'bg-white/15'}">
+                <div class="absolute top-0.5 ${c.exposed ? 'left-[18px]' : 'left-0.5'} w-4 h-4 rounded-full bg-white shadow transition-all"></div>
+              </button>
+            </div>
+
+            <div id="comp-url-${i}" class="min-h-[20px]">
+              ${urlLine}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="rounded-xl border border-border bg-card p-8" style="box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.04), 0 12px 24px rgba(0,0,0,0.03);">
+      <h2 class="text-2xl font-bold tracking-tight mb-1">We detected 4 components in your repository</h2>
+      <p class="text-muted-foreground text-sm mb-6">Rename components and choose which ones get a public URL</p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        ${cards}
+      </div>
+
+      <button onclick="goTo(5)" class="btn-primary w-full rounded-lg px-6 py-3 text-sm font-semibold text-white mb-3">
+        Confirm & Continue
+      </button>
+
+      <div class="text-center">
+        <button onclick="toggleFeedback()" class="text-xs text-muted-foreground hover:text-foreground transition-colors" id="feedback-toggle">
+          This doesn't look right
+        </button>
+      </div>
+
+      <div class="feedback-area mt-3" id="feedback-area">
+        <textarea
+          class="orbit-input w-full rounded-lg px-4 py-3 text-sm text-foreground resize-none h-24"
+          placeholder="Tell us what's wrong and we'll re-analyze..."
+        ></textarea>
+        <button class="btn-secondary rounded-lg px-4 py-2 text-xs font-medium text-foreground mt-2">
+          Submit feedback
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function toggleFeedback() {
+  feedbackOpen = !feedbackOpen;
+  const area = document.getElementById('feedback-area');
+  if (area) {
+    area.classList.toggle('open', feedbackOpen);
+  }
+}
+
+/* ── Step 5: Database ── */
+function renderStep5() {
+  const managedSelected = dbMode === 'managed';
+  const byoSelected = dbMode === 'byo';
+
+  return `
+    <div class="rounded-xl border border-border bg-card p-8" style="box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.04), 0 12px 24px rgba(0,0,0,0.03);">
+      <h2 class="text-2xl font-bold tracking-tight mb-2">Database</h2>
+      <p class="text-muted-foreground text-sm mb-6">Choose how you want to handle your database.</p>
+
+      <div class="space-y-3 mb-6">
+        <!-- Managed -->
+        <div
+          onclick="selectDb('managed')"
+          class="radio-card rounded-xl border p-5 ${managedSelected ? 'selected border-primary' : 'border-border hover:border-border'}"
+        >
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-lg ${managedSelected ? 'bg-primary/15' : 'bg-secondary'} flex items-center justify-center shrink-0 mt-0.5">
+              <i data-lucide="database" class="w-5 h-5 ${managedSelected ? 'text-primary' : 'text-muted-foreground'}"></i>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-sm font-semibold">Orbit-managed</span>
+                <span class="px-2 py-0.5 rounded-full bg-primary/15 text-primary text-[10px] font-bold uppercase tracking-wider">Recommended</span>
+                <span class="px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 text-[10px] font-bold uppercase tracking-wider ml-auto">Included</span>
+              </div>
+              <p class="text-sm text-muted-foreground">PostgreSQL provisioned automatically. Zero config needed.</p>
+            </div>
+            <div class="shrink-0 mt-1">
+              <div class="w-5 h-5 rounded-full border-2 ${managedSelected ? 'border-primary bg-primary' : 'border-muted-foreground/30'} flex items-center justify-center">
+                ${managedSelected ? '<div class="w-2 h-2 rounded-full bg-white"></div>' : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BYO -->
+        <div
+          onclick="selectDb('byo')"
+          class="radio-card rounded-xl border p-5 ${byoSelected ? 'selected border-primary' : 'border-border hover:border-border'}"
+        >
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-lg ${byoSelected ? 'bg-primary/15' : 'bg-secondary'} flex items-center justify-center shrink-0 mt-0.5">
+              <i data-lucide="plug" class="w-5 h-5 ${byoSelected ? 'text-primary' : 'text-muted-foreground'}"></i>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-sm font-semibold">Bring your own</span>
+              </div>
+              <p class="text-sm text-muted-foreground">Use your existing Supabase or Postgres database.</p>
+            </div>
+            <div class="shrink-0 mt-1">
+              <div class="w-5 h-5 rounded-full border-2 ${byoSelected ? 'border-primary bg-primary' : 'border-muted-foreground/30'} flex items-center justify-center">
+                ${byoSelected ? '<div class="w-2 h-2 rounded-full bg-white"></div>' : ''}
+              </div>
+            </div>
+          </div>
+
+          ${byoSelected ? `
+          <div class="mt-4 ml-14 space-y-3" style="animation: stepIn 0.25s ease-out;">
+            <div>
+              <label class="block text-xs font-medium text-muted-foreground mb-1.5">Connection URL</label>
+              <input
+                type="password"
+                id="byo-url"
+                value="postgresql://user:pass@db.xxx.supabase.co/postgres"
+                class="orbit-input w-full rounded-lg px-4 py-2.5 text-sm text-foreground font-mono"
+                placeholder="postgresql://user:pass@db.xxx.supabase.co/postgres"
+              />
+            </div>
+            ${byoConnected ? `
+              <div class="flex items-center gap-2 text-green-400 text-sm bg-green-500/10 rounded-lg px-3 py-2">
+                <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                <span>Connected &middot; PostgreSQL 15.3 &middot; 42ms</span>
+              </div>
+            ` : `
+              <button onclick="testConnection(event)" class="btn-secondary rounded-lg px-4 py-2 text-xs font-medium text-foreground inline-flex items-center gap-2" id="test-btn">
+                <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                Test connection
+              </button>
+            `}
+          </div>
+          ` : ''}
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button onclick="goTo(4)" class="btn-secondary rounded-lg px-5 py-3 text-sm font-medium text-foreground">
+          Back
+        </button>
+        <button
+          onclick="goTo(6)"
+          class="btn-primary flex-1 rounded-lg px-6 py-3 text-sm font-semibold text-white ${byoSelected && !byoConnected ? 'opacity-50 cursor-not-allowed' : ''}"
+          ${byoSelected && !byoConnected ? 'disabled' : ''}
+        >
+          Continue
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function selectDb(mode) {
+  dbMode = mode;
+  byoConnected = false;
+  renderStep();
+}
+
+function testConnection(e) {
+  e.stopPropagation();
+  const btn = document.getElementById('test-btn');
+  if (btn) {
+    btn.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 spinner"></i> Testing...';
+    btn.disabled = true;
+    lucide.createIcons();
+  }
+  setTimeout(() => {
+    byoConnected = true;
+    renderStep();
+  }, 1200);
+}
+
+/* ── Step 6: Summary ── */
+function renderStep6() {
+  const dbLabel = dbMode === 'managed' ? 'Orbit-managed PostgreSQL' : 'Bring your own (connected)';
+  return `
+    <div class="rounded-xl border border-border bg-card p-8" style="box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.04), 0 12px 24px rgba(0,0,0,0.03);">
+      <div class="text-center mb-6">
+        <div class="w-12 h-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
+          <i data-lucide="rocket" class="w-6 h-6 text-primary"></i>
+        </div>
+        <h2 class="text-2xl font-bold tracking-tight mb-1">Ready to launch</h2>
+        <p class="text-muted-foreground text-sm">Review your configuration and launch your app.</p>
+      </div>
+
+      <div class="rounded-xl border border-border bg-secondary/30 divide-y divide-border mb-6">
+        <div class="flex items-center justify-between px-5 py-3.5">
+          <div class="flex items-center gap-3">
+            <i data-lucide="box" class="w-4 h-4 text-muted-foreground"></i>
+            <span class="text-sm text-muted-foreground">App</span>
+          </div>
+          <span class="text-sm font-mono font-medium">${SLUG}</span>
+        </div>
+        <div class="flex items-center justify-between px-5 py-3.5">
+          <div class="flex items-center gap-3">
+            <i data-lucide="layers" class="w-4 h-4 text-muted-foreground"></i>
+            <span class="text-sm text-muted-foreground">Components</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 text-xs font-medium">api</span>
+            <span class="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 text-xs font-medium">admin-api</span>
+            <span class="px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-400 text-xs font-medium">frontend</span>
+            <span class="px-2 py-0.5 rounded-full bg-white/10 text-gray-400 text-xs font-medium">worker</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between px-5 py-3.5">
+          <div class="flex items-center gap-3">
+            <i data-lucide="database" class="w-4 h-4 text-muted-foreground"></i>
+            <span class="text-sm text-muted-foreground">Database</span>
+          </div>
+          <span class="text-sm font-medium">${dbLabel}</span>
+        </div>
+        <div class="flex items-center justify-between px-5 py-3.5">
+          <div class="flex items-center gap-3">
+            <i data-lucide="github" class="w-4 h-4 text-muted-foreground"></i>
+            <span class="text-sm text-muted-foreground">Repository</span>
+          </div>
+          <span class="text-sm font-mono font-medium">${REPO}</span>
+        </div>
+      </div>
+
+      <p class="text-xs text-muted-foreground mb-6 flex items-center gap-1.5">
+        <i data-lucide="info" class="w-3.5 h-3.5"></i>
+        <code class="font-mono">orbit-ci.yml</code> will be committed to your repository to start the build
+      </p>
+
+      <div class="flex gap-3">
+        <button onclick="goTo(5)" class="btn-secondary rounded-lg px-5 py-3 text-sm font-medium text-foreground">
+          Back
+        </button>
+        <button onclick="goTo(7)" class="btn-primary flex-1 rounded-lg px-6 py-3.5 text-base font-bold text-white" style="background: linear-gradient(135deg, hsl(24 95% 53%), hsl(16 85% 45%));">
+          <span class="flex items-center justify-center gap-2">
+            <i data-lucide="rocket" class="w-5 h-5"></i>
+            Launch
+          </span>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+/* ── Step 7: Building ── */
+function renderStep7() {
+  return `
+    <div class="rounded-xl border border-border bg-card p-8" style="box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.04), 0 12px 24px rgba(0,0,0,0.03);">
+      <div class="text-center mb-6">
+        <div class="w-12 h-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
+          <i data-lucide="hammer" class="w-6 h-6 text-primary"></i>
+        </div>
+        <h2 class="text-2xl font-bold tracking-tight mb-1">Building your app</h2>
+        <p class="text-muted-foreground text-sm">Sit back while we set everything up...</p>
+      </div>
+
+      <div class="space-y-3" id="build-steps">
+        <div class="flex items-center gap-3 p-3 rounded-lg opacity-40" id="bstep-0">
+          <div class="w-5 h-5 flex items-center justify-center text-muted-foreground">
+            <div class="w-2 h-2 rounded-full bg-muted-foreground/40"></div>
+          </div>
+          <span class="text-sm">Dockerfiles committed to repository</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-lg opacity-40" id="bstep-1">
+          <div class="w-5 h-5 flex items-center justify-center text-muted-foreground">
+            <div class="w-2 h-2 rounded-full bg-muted-foreground/40"></div>
+          </div>
+          <span class="text-sm">orbit-ci.yml committed</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-lg opacity-40" id="bstep-2">
+          <div class="w-5 h-5 flex items-center justify-center text-muted-foreground">
+            <div class="w-2 h-2 rounded-full bg-muted-foreground/40"></div>
+          </div>
+          <span class="text-sm">Building backend image...</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-lg opacity-40" id="bstep-3">
+          <div class="w-5 h-5 flex items-center justify-center text-muted-foreground">
+            <div class="w-2 h-2 rounded-full bg-muted-foreground/40"></div>
+          </div>
+          <span class="text-sm">Building frontend image...</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-lg opacity-40" id="bstep-4">
+          <div class="w-5 h-5 flex items-center justify-center text-muted-foreground">
+            <div class="w-2 h-2 rounded-full bg-muted-foreground/40"></div>
+          </div>
+          <span class="text-sm">Deploying to Orbit...</span>
+        </div>
+      </div>
+
+      <div class="mt-6 rounded-lg bg-secondary/60 border border-border px-4 py-3">
+        <div class="flex items-center gap-2 text-sm">
+          <i data-lucide="globe" class="w-4 h-4 text-muted-foreground"></i>
+          <span class="text-muted-foreground">Your app will be live at:</span>
+        </div>
+        <p class="font-mono text-sm mt-1 text-primary font-medium">${DOMAIN}</p>
+      </div>
+    </div>
+  `;
+}
+
+const buildLabels = [
+  'Dockerfiles committed to repository',
+  'orbit-ci.yml committed',
+  'Building backend image...',
+  'Building frontend image...',
+  'Deploying to Orbit...',
+];
+
+function runBuildAnimation() {
+  let idx = 0;
+
+  function activateBuildStep(i) {
+    const el = document.getElementById(`bstep-${i}`);
+    if (!el) return;
+    el.className = 'flex items-center gap-3 p-3 rounded-lg';
+    el.style.opacity = '1';
+    el.innerHTML = `
+      <div class="w-5 h-5 flex items-center justify-center text-primary">
+        <i data-lucide="loader-2" class="w-4 h-4 spinner"></i>
+      </div>
+      <span class="text-sm">${buildLabels[i]}</span>
+    `;
+    lucide.createIcons();
+  }
+
+  function completeBuildStep(i) {
+    const el = document.getElementById(`bstep-${i}`);
+    if (!el) return;
+    el.className = 'flex items-center gap-3 p-3 rounded-lg bg-green-500/5 progress-item completing';
+    el.innerHTML = `
+      <div class="w-5 h-5 flex items-center justify-center text-green-400">
+        <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+      </div>
+      <span class="text-sm">${buildLabels[i]}</span>
+    `;
+    lucide.createIcons();
+  }
+
+  // Start first
+  activateBuildStep(0);
+
+  const timings = [600, 500, 1500, 1200, 800]; // ms per step
+  let elapsed = 0;
+
+  for (let i = 0; i < 5; i++) {
+    elapsed += timings[i];
+    const capturedI = i;
+    setTimeout(() => {
+      completeBuildStep(capturedI);
+      if (capturedI + 1 < 5) {
+        activateBuildStep(capturedI + 1);
+      }
+    }, elapsed);
+  }
+}
+
+// Init
+renderStepIndicator();
+renderStep();
+</script>
+</body>
+</html>
